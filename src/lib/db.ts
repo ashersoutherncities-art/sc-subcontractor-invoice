@@ -250,6 +250,22 @@ function initDb(database: Database.Database) {
       related_id INTEGER,
       sent_at TEXT DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS subcontractor_profiles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      profile_name TEXT NOT NULL,
+      company_name TEXT NOT NULL,
+      email TEXT,
+      phone TEXT,
+      address TEXT,
+      license_number TEXT,
+      accent_color TEXT,
+      logo_data_url TEXT,
+      source_type TEXT DEFAULT 'manual',
+      source_key TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
   `);
 
   // Migration: add columns to existing tables if missing
@@ -286,6 +302,11 @@ function initDb(database: Database.Database) {
 
   // Lien waiver override
   addColIfMissing('invoices', 'lien_waiver_override_note', 'TEXT');
+
+  addColIfMissing('subcontractor_profiles', 'accent_color', 'TEXT');
+  addColIfMissing('subcontractor_profiles', 'logo_data_url', 'TEXT');
+  addColIfMissing('subcontractor_profiles', 'source_type', "TEXT DEFAULT 'manual'");
+  addColIfMissing('subcontractor_profiles', 'source_key', 'TEXT');
 }
 
 // ---- Existing query functions ----

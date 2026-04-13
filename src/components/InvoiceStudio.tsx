@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useMemo, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useState } from "react";
 
 type InvoiceTemplate = "builder" | "studio" | "executive";
 
@@ -31,6 +31,22 @@ type InvoiceState = {
   depositAmount: number;
   notes: string;
   template: InvoiceTemplate;
+};
+
+type SubcontractorProfile = {
+  id: number;
+  profileName: string;
+  companyName: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  licenseNumber: string | null;
+  accentColor: string | null;
+  logoDataUrl: string | null;
+  sourceType: string | null;
+  sourceKey: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 const today = new Date().toISOString().split("T")[0];
@@ -121,9 +137,28 @@ function SectionTitle({ eyebrow, title, body }: { eyebrow: string; title: string
   );
 }
 
+function profileToInvoicePatch(profile: SubcontractorProfile): Partial<InvoiceState> {
+  return {
+    subcontractorName: profile.companyName,
+    subcontractorEmail: profile.email || "",
+    subcontractorPhone: profile.phone || "",
+    subcontractorAddress: profile.address || "",
+    subcontractorLicense: profile.licenseNumber || "",
+    accentColor: profile.accentColor || initialState.accentColor,
+    logoDataUrl: profile.logoDataUrl || "",
+  };
+}
+
 export default function InvoiceStudio() {
   const [invoice, setInvoice] = useState<InvoiceState>(initialState);
   const [lineItems, setLineItems] = useState<LineItem[]>(sampleItems);
+  const [profiles, setProfiles] = useState<SubcontractorProfile[]>([]);
+  const [selectedProfileId, setSelectedProfileId] = useState<string>("");
+  const [profileName, setProfileName] = useState(initialState.subcontractorName);
+  const [profilesLoading, setProfilesLoading] = useState(true);
+  const [profileActionMessage, setProfileActionMessage] = useState<string>("");
+  const [profileError, setProfileError] = useState<string>("");
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   const subtotal = useMemo(() => lineItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0), [lineItems]);
   const taxAmount = subtotal * (invoice.taxPercent / 100);
@@ -131,8 +166,33 @@ export default function InvoiceStudio() {
   const balanceDue = Math.max(total - invoice.depositAmount, 0);
   const activeTemplate = templates.find((template) => template.id === invoice.template) ?? templates[0];
 
+  useEffect(() => {
+    void loadProfiles();
+  }, []);
+
+  async function loadProfiles() {
+    setProfilesLoading(true);
+    setProfileError("");
+    try {
+      const response = await fetch("/api/subcontractor-profiles", { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error("Failed to load profiles");
+      }
+      const nextProfiles = (await response.json()) as SubcontractorProfile[];
+      setProfiles(nextProfiles);
+    } catch (error) {
+      console.error(error);
+      setProfileError("Could not load saved profiles right now.");
+    } finally {
+      setProfilesLoading(false);
+    }
+  }
+
   function updateField<K extends keyof InvoiceState>(key: K, value: InvoiceState[K]) {
     setInvoice((current) => ({ ...current, [key]: value }));
+    if (key === "subcontractorName") {
+      setProfileName(String(value));
+    }
   }
 
   function updateItem(id: string, key: keyof LineItem, value: string | number) {
@@ -165,6 +225,10 @@ export default function InvoiceStudio() {
   function resetDemo() {
     setInvoice({ ...initialState, invoiceNumber: makeInvoiceNumber() });
     setLineItems(sampleItems.map((item) => ({ ...item, id: crypto.randomUUID() })));
+    setSelectedProfileId("");
+    setProfileName(initialState.subcontractorName);
+    setProfileActionMessage("");
+    setProfileError("");
   }
 
   function selectTemplate(templateId: InvoiceTemplate) {
@@ -174,6 +238,65 @@ export default function InvoiceStudio() {
       template: templateId,
       accentColor: template?.accent ?? current.accentColor,
     }));
+  }
+
+  function applySelectedProfile(profileId: string) {
+    setSelectedProfileId(profileId);
+    if (!profileId) return;
+    const selectedProfile = profiles.find((profile) => String(profile.id) === profileId);
+    if (!selectedProfile) return;
+
+    setInvoice((current) => ({
+      ...current,
+      ...profileToInvoicePatch(selectedProfile),
+    }));
+    setProfileName(selectedProfile.profileName);
+    setProfileActionMessage(`Loaded profile: ${selectedProfile.profileName}`);
+    setProfileError("");
+  }
+
+  async function saveProfile() {
+    setIsSavingProfile(true);
+    setProfileActionMessage("");
+    setProfileError("");
+
+    try {
+      const response = await fetch("/api/subcontractor-profiles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          profileName: profileName.trim() || invoice.subcontractorName.trim(),
+          companyName: invoice.subcontractorName.trim(),
+          email: invoice.subcontractorEmail.trim(),
+          phone: invoice.subcontractorPhone.trim(),
+          address: invoice.subcontractorAddress.trim(),
+          licenseNumber: invoice.subcontractorLicense.trim(),
+          accentColor: invoice.accentColor.trim(),
+          logoDataUrl: invoice.logoDataUrl,
+          sourceType: "manual",
+          sourceKey: null,
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "Failed to save profile");
+      }
+
+      const savedProfile = payload as SubcontractorProfile;
+      setProfiles((current) => {
+        const filtered = current.filter((profile) => profile.id !== savedProfile.id);
+        return [savedProfile, ...filtered].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+      });
+      setSelectedProfileId(String(savedProfile.id));
+      setProfileName(savedProfile.profileName);
+      setProfileActionMessage(`Saved profile: ${savedProfile.profileName}`);
+    } catch (error) {
+      console.error(error);
+      setProfileError(error instanceof Error ? error.message : "Failed to save profile.");
+    } finally {
+      setIsSavingProfile(false);
+    }
   }
 
   return (
@@ -219,7 +342,37 @@ export default function InvoiceStudio() {
           </div>
 
           <div className="panel-card">
-            <SectionTitle eyebrow="Brand" title="Company setup" body="Set the identity clients will see at the top of every invoice." />
+            <SectionTitle eyebrow="Brand" title="Company setup" body="Set the identity clients will see at the top of every invoice, then save it as a reusable profile for next time." />
+            <div className="profile-tools">
+              <div className="form-grid two-col compact-grid profile-toolbar-grid">
+                <div>
+                  <label>Saved profile</label>
+                  <select value={selectedProfileId} onChange={(e) => applySelectedProfile(e.target.value)}>
+                    <option value="">Select a saved profile</option>
+                    {profiles.map((profile) => (
+                      <option key={profile.id} value={profile.id}>{profile.profileName}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label>Profile name</label>
+                  <input value={profileName} onChange={(e) => setProfileName(e.target.value)} placeholder="Oakline default profile" />
+                </div>
+              </div>
+              <div className="profile-actions-row">
+                <button className="btn btn-secondary" type="button" onClick={saveProfile} disabled={isSavingProfile || !invoice.subcontractorName.trim()}>
+                  {isSavingProfile ? "Saving..." : "Save current profile"}
+                </button>
+                <button className="text-link" type="button" onClick={() => void loadProfiles()}>
+                  Refresh profiles
+                </button>
+              </div>
+              <p className="support-copy">Profiles are saved in the app database and can later map cleanly to vendor records through source fields.</p>
+              {profilesLoading && <p className="status-copy">Loading saved profiles...</p>}
+              {!profilesLoading && profiles.length === 0 && <p className="status-copy">No saved profiles yet. Fill in your subcontractor details and save one.</p>}
+              {profileActionMessage && <p className="status-copy success-copy">{profileActionMessage}</p>}
+              {profileError && <p className="status-copy error-copy">{profileError}</p>}
+            </div>
             <div className="form-grid two-col compact-grid">
               <div className="field field-full">
                 <label>Company logo</label>
