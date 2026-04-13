@@ -27,7 +27,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-button, input, textarea {
+button, input, textarea, select {
   font: inherit;
 }
 button { cursor: pointer; }
@@ -135,7 +135,7 @@ label {
   font-weight: 700;
   color: var(--ink-700);
 }
-input, textarea {
+input, textarea, select {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -144,7 +144,7 @@ input, textarea {
   color: var(--ink-900);
   transition: 140ms ease;
 }
-input:focus, textarea:focus {
+input:focus, textarea:focus, select:focus {
   outline: none;
   border-color: #c96a2b;
   box-shadow: 0 0 0 4px rgba(201,106,43,0.12);
@@ -167,6 +167,49 @@ input:focus, textarea:focus {
   color: #8f4b1d;
   font-weight: 700;
   padding: 0;
+}
+.template-picker {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+.template-option {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  text-align: left;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,252,0.92));
+  padding: 16px;
+  color: var(--ink-900);
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+.template-option:hover {
+  transform: translateY(-1px);
+  border-color: rgba(201,106,43,0.4);
+}
+.template-option.is-active {
+  border-color: var(--invoice-accent, #c96a2b);
+  box-shadow: 0 0 0 4px rgba(201,106,43,0.10);
+}
+.template-option span {
+  display: block;
+}
+.template-option strong {
+  display: block;
+  margin-bottom: 4px;
+}
+.template-option small {
+  color: var(--ink-500);
+  line-height: 1.5;
+}
+.template-option-chip {
+  width: 14px;
+  min-width: 14px;
+  height: 54px;
+  border-radius: 999px;
 }
 .line-items-stack {
   display: flex;
@@ -343,6 +386,133 @@ input:focus, textarea:focus {
   font-size: 1.3rem;
   color: var(--invoice-accent);
 }
+.invoice-template-builder .invoice-topbar {
+  height: 18px;
+}
+.invoice-template-builder .invoice-meta-card {
+  background: linear-gradient(180deg, #fef7f0, #fffaf4);
+}
+.invoice-template-builder .invoice-table thead {
+  background: #fff5eb;
+}
+.invoice-template-builder .notes-card,
+.invoice-template-builder .totals-card {
+  background: linear-gradient(180deg, #fffdfa, #fff6ee);
+}
+.invoice-template-studio {
+  background: linear-gradient(180deg, #ffffff 0%, #f3f7fa 100%);
+}
+.invoice-template-studio .invoice-topbar {
+  height: 92px;
+  margin-bottom: 24px;
+  background: linear-gradient(120deg, #0f172a, var(--invoice-accent));
+}
+.invoice-template-studio .invoice-label,
+.invoice-template-studio .mini-label,
+.invoice-template-studio .eyebrow {
+  color: var(--invoice-accent);
+}
+.invoice-template-studio .invoice-header {
+  gap: 30px;
+}
+.invoice-template-studio .invoice-meta-card {
+  background: #0f172a;
+  color: white;
+  border: 0;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+}
+.invoice-template-studio .invoice-meta-card span {
+  color: rgba(255,255,255,0.62);
+}
+.invoice-template-studio .brand-mark {
+  border-radius: 30px;
+  background: linear-gradient(135deg, var(--invoice-accent), #0f172a);
+}
+.invoice-template-studio .invoice-subgrid {
+  padding: 22px;
+  border-radius: 26px;
+  background: rgba(50, 93, 121, 0.06);
+}
+.invoice-template-studio .invoice-table {
+  border-radius: 26px;
+  overflow: hidden;
+  border: 0;
+  box-shadow: inset 0 0 0 1px rgba(50, 93, 121, 0.12);
+}
+.invoice-template-studio .invoice-table thead {
+  background: #dbe8ef;
+}
+.invoice-template-studio .invoice-table tbody tr:nth-child(even) {
+  background: rgba(241, 245, 249, 0.8);
+}
+.invoice-template-studio .notes-card,
+.invoice-template-studio .totals-card {
+  border: 0;
+  box-shadow: inset 0 0 0 1px rgba(50, 93, 121, 0.12);
+}
+.invoice-template-executive {
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.08);
+}
+.invoice-template-executive .invoice-topbar {
+  height: 4px;
+  background: linear-gradient(90deg, var(--invoice-accent), var(--invoice-accent));
+}
+.invoice-template-executive .invoice-header {
+  grid-template-columns: minmax(0, 1fr) 260px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(15,23,42,0.08);
+}
+.invoice-template-executive .brand-logo,
+.invoice-template-executive .brand-mark {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+}
+.invoice-template-executive .invoice-label {
+  color: var(--invoice-accent);
+  letter-spacing: 0.2em;
+}
+.invoice-template-executive .invoice-meta-card,
+.invoice-template-executive .notes-card,
+.invoice-template-executive .totals-card {
+  background: white;
+  border-radius: 0;
+  border: 0;
+  padding: 0;
+}
+.invoice-template-executive .invoice-meta-card {
+  border-left: 1px solid rgba(15,23,42,0.12);
+  padding-left: 22px;
+}
+.invoice-template-executive .invoice-subgrid {
+  gap: 32px;
+  padding: 18px 0;
+  border-top: 1px solid rgba(15,23,42,0.08);
+  border-bottom: 1px solid rgba(15,23,42,0.08);
+}
+.invoice-template-executive .invoice-table {
+  border: 0;
+  border-radius: 0;
+}
+.invoice-template-executive .invoice-table thead {
+  background: transparent;
+}
+.invoice-template-executive .invoice-table th {
+  border-bottom: 1.5px solid rgba(15,23,42,0.75);
+  color: var(--invoice-accent);
+}
+.invoice-template-executive .invoice-bottom-grid {
+  gap: 36px;
+  grid-template-columns: minmax(0, 1fr) 280px;
+}
+.invoice-template-executive .notes-card {
+  border-top: 1px solid rgba(15,23,42,0.1);
+  padding-top: 16px;
+}
+.invoice-template-executive .totals-card {
+  border-top: 1px solid rgba(15,23,42,0.1);
+  padding-top: 16px;
+}
 @media (max-width: 1120px) {
   .workspace-grid { grid-template-columns: 1fr; }
   .editor-panel { position: static; }
@@ -356,6 +526,11 @@ input:focus, textarea:focus {
   .invoice-sheet { padding: 0 18px 18px; }
   .invoice-topbar { margin: 0 -18px 24px; }
   .brand-lockup { flex-direction: column; }
+  .invoice-template-executive .invoice-meta-card {
+    border-left: 0;
+    border-top: 1px solid rgba(15,23,42,0.12);
+    padding: 18px 0 0;
+  }
 }
 @media print {
   @page { size: auto; margin: 12mm; }
@@ -370,4 +545,4 @@ input:focus, textarea:focus {
     padding: 0 0 8mm !important;
   }
   .invoice-topbar { margin: 0 0 8mm !important; }
- }
+}

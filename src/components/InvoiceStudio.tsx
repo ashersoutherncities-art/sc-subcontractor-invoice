@@ -2,6 +2,8 @@
 
 import { ChangeEvent, useMemo, useState } from "react";
 
+type InvoiceTemplate = "builder" | "studio" | "executive";
+
 type LineItem = {
   id: string;
   description: string;
@@ -28,6 +30,7 @@ type InvoiceState = {
   taxPercent: number;
   depositAmount: number;
   notes: string;
+  template: InvoiceTemplate;
 };
 
 const today = new Date().toISOString().split("T")[0];
@@ -54,7 +57,34 @@ const initialState: InvoiceState = {
   taxPercent: 7.5,
   depositAmount: 500,
   notes: "Thank you for the opportunity to support this project. Please include the invoice number with ACH, check, or Zelle payment.",
+  template: "builder",
 };
+
+const templates: {
+  id: InvoiceTemplate;
+  name: string;
+  description: string;
+  accent: string;
+}[] = [
+  {
+    id: "builder",
+    name: "Builder Classic",
+    description: "Warm construction-forward styling with a bold top band and practical layout.",
+    accent: "#c96a2b",
+  },
+  {
+    id: "studio",
+    name: "Studio Slate",
+    description: "Deep slate header, editorial spacing, and a modern card-based presentation.",
+    accent: "#325d79",
+  },
+  {
+    id: "executive",
+    name: "Executive Ledger",
+    description: "Minimal monochrome framing with refined dividers for a formal client-facing look.",
+    accent: "#1f2937",
+  },
+];
 
 const sampleItems: LineItem[] = [
   { id: crypto.randomUUID(), description: "Interior trim installation, first floor", quantity: 1, unitPrice: 1850 },
@@ -99,6 +129,7 @@ export default function InvoiceStudio() {
   const taxAmount = subtotal * (invoice.taxPercent / 100);
   const total = subtotal + taxAmount;
   const balanceDue = Math.max(total - invoice.depositAmount, 0);
+  const activeTemplate = templates.find((template) => template.id === invoice.template) ?? templates[0];
 
   function updateField<K extends keyof InvoiceState>(key: K, value: InvoiceState[K]) {
     setInvoice((current) => ({ ...current, [key]: value }));
@@ -136,6 +167,15 @@ export default function InvoiceStudio() {
     setLineItems(sampleItems.map((item) => ({ ...item, id: crypto.randomUUID() })));
   }
 
+  function selectTemplate(templateId: InvoiceTemplate) {
+    const template = templates.find((entry) => entry.id === templateId);
+    setInvoice((current) => ({
+      ...current,
+      template: templateId,
+      accentColor: template?.accent ?? current.accentColor,
+    }));
+  }
+
   return (
     <main className="invoice-app-shell">
       <section className="hero-band">
@@ -154,6 +194,30 @@ export default function InvoiceStudio() {
 
       <section className="workspace-grid">
         <div className="editor-panel no-print">
+          <div className="panel-card">
+            <SectionTitle eyebrow="Style" title="Invoice template" body="Pick the overall invoice look. The live preview updates instantly and stays ready for print or PDF." />
+            <div className="template-picker" role="radiogroup" aria-label="Invoice template picker">
+              {templates.map((template) => {
+                const isActive = template.id === invoice.template;
+                return (
+                  <button
+                    key={template.id}
+                    type="button"
+                    className={`template-option${isActive ? " is-active" : ""}`}
+                    onClick={() => selectTemplate(template.id)}
+                    aria-pressed={isActive}
+                  >
+                    <span className="template-option-chip" style={{ background: template.accent }} />
+                    <span>
+                      <strong>{template.name}</strong>
+                      <small>{template.description}</small>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="panel-card">
             <SectionTitle eyebrow="Brand" title="Company setup" body="Set the identity clients will see at the top of every invoice." />
             <div className="form-grid two-col compact-grid">
@@ -286,12 +350,12 @@ export default function InvoiceStudio() {
 
         <div className="preview-column print-full">
           <div className="summary-strip no-print">
+            <div><span>Template</span><strong>{activeTemplate.name}</strong></div>
             <div><span>Subtotal</span><strong>{formatCurrency(subtotal)}</strong></div>
-            <div><span>Tax</span><strong>{formatCurrency(taxAmount)}</strong></div>
             <div><span>Balance due</span><strong>{formatCurrency(balanceDue)}</strong></div>
           </div>
 
-          <article className="invoice-sheet" style={{ ["--invoice-accent" as string]: invoice.accentColor }}>
+          <article className={`invoice-sheet invoice-template-${invoice.template}`} style={{ ["--invoice-accent" as string]: invoice.accentColor }}>
             <div className="invoice-topbar" />
             <header className="invoice-header">
               <div className="brand-lockup">
