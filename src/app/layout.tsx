@@ -1,22 +1,15 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import SidebarLayout from "@/components/SidebarLayout";
 
 export const metadata: Metadata = {
-  title: "SCE Invoice Tool",
-  description: "Invoice management for Southern Cities Construction LLC",
+  title: "Southern Cities Invoice Studio",
+  description: "Mobile-friendly invoice generator for subcontractors with branded print-ready previews.",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className="antialiased">
-        <SidebarLayout>{children}</SidebarLayout>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
