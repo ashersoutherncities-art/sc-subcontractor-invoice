@@ -12,22 +12,25 @@ type ProfilePayload = {
   sourceKey?: string | null;
 };
 
+const PROFILE_COLUMNS = `
+  id,
+  profile_name as profileName,
+  company_name as companyName,
+  contact_name as contactName,
+  email,
+  phone,
+  address,
+  source_type as sourceType,
+  source_key as sourceKey,
+  created_at as createdAt,
+  updated_at as updatedAt
+`;
+
 export async function GET() {
   try {
     const db = getDb();
     const profiles = db.prepare(`
-      SELECT
-        id,
-        profile_name as profileName,
-        company_name as companyName,
-        contact_name as contactName,
-        email,
-        phone,
-        address,
-        source_type as sourceType,
-        source_key as sourceKey,
-        created_at as createdAt,
-        updated_at as updatedAt
+      SELECT ${PROFILE_COLUMNS}
       FROM client_profiles
       ORDER BY updated_at DESC, profile_name ASC
     `).all();
@@ -52,6 +55,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Profile name and client contact name are required' }, { status: 400 });
     }
 
+    const params = {
+      profile_name: profileName,
+      company_name: companyName || null,
+      contact_name: contactName,
+      email: body.email?.trim() || null,
+      phone: body.phone?.trim() || null,
+      address: body.address?.trim() || null,
+      source_type: body.sourceType?.trim() || 'manual',
+      source_key: body.sourceKey?.trim() || null,
+    };
+
     const existing = db.prepare('SELECT id FROM client_profiles WHERE lower(profile_name) = lower(?)').get(profileName) as { id: number } | undefined;
 
     if (existing) {
@@ -67,34 +81,9 @@ export async function POST(request: Request) {
             source_key = @source_key,
             updated_at = datetime('now')
         WHERE id = @id
-      `).run({
-        id: existing.id,
-        profile_name: profileName,
-        company_name: companyName || null,
-        contact_name: contactName,
-        email: body.email?.trim() || null,
-        phone: body.phone?.trim() || null,
-        address: body.address?.trim() || null,
-        source_type: body.sourceType?.trim() || 'manual',
-        source_key: body.sourceKey?.trim() || null,
-      });
+      `).run({ id: existing.id, ...params });
 
-      const updated = db.prepare(`
-        SELECT
-          id,
-          profile_name as profileName,
-          company_name as companyName,
-          contact_name as contactName,
-          email,
-          phone,
-          address,
-          source_type as sourceType,
-          source_key as sourceKey,
-          created_at as createdAt,
-          updated_at as updatedAt
-        FROM client_profiles
-        WHERE id = ?
-      `).get(existing.id);
+      const updated = db.prepare(`SELECT ${PROFILE_COLUMNS} FROM client_profiles WHERE id = ?`).get(existing.id);
 
       return NextResponse.json(updated);
     }
@@ -121,33 +110,9 @@ export async function POST(request: Request) {
         @source_key,
         datetime('now')
       )
-    `).run({
-      profile_name: profileName,
-      company_name: companyName || null,
-      contact_name: contactName,
-      email: body.email?.trim() || null,
-      phone: body.phone?.trim() || null,
-      address: body.address?.trim() || null,
-      source_type: body.sourceType?.trim() || 'manual',
-      source_key: body.sourceKey?.trim() || null,
-    });
+    `).run(params);
 
-    const created = db.prepare(`
-      SELECT
-        id,
-        profile_name as profileName,
-        company_name as companyName,
-        contact_name as contactName,
-        email,
-        phone,
-        address,
-        source_type as sourceType,
-        source_key as sourceKey,
-        created_at as createdAt,
-        updated_at as updatedAt
-      FROM client_profiles
-      WHERE id = ?
-    `).get(result.lastInsertRowid);
+    const created = db.prepare(`SELECT ${PROFILE_COLUMNS} FROM client_profiles WHERE id = ?`).get(result.lastInsertRowid);
 
     return NextResponse.json(created, { status: 201 });
   } catch (error) {
